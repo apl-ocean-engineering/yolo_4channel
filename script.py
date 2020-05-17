@@ -21,3 +21,8 @@ import os
 cwd = os.getcwd()
 files = glob.glob(cwd + '/**/*.png', recursive=True)
 print(files)
+
+def processImage(image):
+    # do stuff
+
+    return result
