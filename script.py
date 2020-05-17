@@ -17,12 +17,43 @@
 
 import glob
 import os
+import cv2
+import numpy
 
-cwd = os.getcwd()
-files = glob.glob(cwd + '/**/*.png', recursive=True)
-print(files)
 
 def processImage(image):
     # do stuff
-
+    edges = cv2.Canny(image,100,200)
+    numpy.dstack( ( image, edges ) )
+    result = image
     return result
+
+
+FILE_TYPE = ".png"
+
+
+cwd = os.getcwd()
+init_files = glob.glob(cwd + '/**/*' + FILE_TYPE, recursive=True)
+files = []
+for path in init_files:
+    if "result" in path:
+        pass
+    else:
+        files.append(os.path.relpath(path))
+print(files)
+
+if not os.path.exists('result'):
+    os.mkdir('result')
+
+for image in files:
+    cur_image = cv2.imread(image)
+    fname = os.path.basename(image)
+    # print(fname)
+    result_image = processImage(cur_image)
+    result_path = cwd + "/result/" + image
+    dir_path = result_path[:-len(fname)]
+    print(dir_path)
+    if not os.path.exists(dir_path):
+        os.makedirs(dir_path, exist_ok = True)
+
+    cv2.imwrite(result_path, result_image)
