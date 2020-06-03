@@ -1,19 +1,5 @@
 #!/usr/bin/env python3
-# TODO:
-#       - get list of filepaths for every image to be processed
-#       - loop through images, send each to function that processes them
-#         and returns the result
-#       - save result under modified filepath
-
-
-# list of every filepath
-#   - assume script is run at base directory of all images
-#       | - script
-#       | - image folder 1
-#       | - image folder 2
-#       | - results (if run before)
-#   - user-specified filetype for images (global variable)
-#     default = png
+# COPY THIS SCRIPT TO THE BASE FOLDER CONTAINING ALL IMAGES / IMAGE FOLDERS
 
 import glob
 import os
@@ -21,15 +7,32 @@ import cv2
 import numpy
 
 FILE_TYPE = ".png"
+IMAGE_DIR = "/home/tanner/Cinderblock/images"
+# cwd = IMAGE_DIR
+cwd = os.getcwd()
+backSub = None
 
-def processImage(image):
+def processImage_Canny(image):
     edges = cv2.Canny(image,100,200)
-    numpy.dstack( ( image, edges ) )
-    result = image
+    edges = edges.astype('uint8')
+    result = numpy.dstack((image, edges))
+    return result
+
+def processImage_MOG(image):
+    global backSub
+    if backSub is None:
+        backSub = cv2.createBackgroundSubtractorMOG2()
+
+    fgMask = backSub.apply(image)
+    print("FGMASK SHAPE: " + str(fgMask.shape))
+    cv2.imshow('Frame', image)
+    cv2.imshow('FG Mask', fgMask)
+    fgMask = fgMask.astype('uint8')
+    cv2.waitKey(10)
+    result = numpy.dstack((image, fgMask))
     return result
 
 def getFilePathList():
-    cwd = os.getcwd()
     init_files = glob.glob(cwd + '/**/*' + FILE_TYPE, recursive=True)
     files = []
     for path in init_files:
@@ -50,10 +53,11 @@ if __name__ == "__main__":
         cur_image = cv2.imread(image)
         fname = os.path.basename(image)
         # print(fname)
-        result_image = processImage(cur_image)
+        result_image = processImage_MOG(cur_image)
         result_path = cwd + "/result/" + image
         dir_path = result_path[:-len(fname)]
         print(dir_path)
+        print
         if not os.path.exists(dir_path):
             os.makedirs(dir_path, exist_ok = True)
 

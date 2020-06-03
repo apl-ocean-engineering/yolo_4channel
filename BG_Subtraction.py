@@ -21,8 +21,11 @@ backSub = cv.createBackgroundSubtractorMOG2()
 
 files = getFilePathList()
 
-for frame in files:
+for file in files:
+    frame = cv2.imread(file)
     fgMask = backSub.apply(frame)
+    print("IMG SHAPE: " + str(frame.shape))
+    print("MASK SHAPE: " + str(fgMask.shape))
 
     cv.imshow('Frame', frame)
     cv.imshow('FG Mask', fgMask)
