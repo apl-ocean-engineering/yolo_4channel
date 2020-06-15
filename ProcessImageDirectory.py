@@ -12,6 +12,9 @@ IMAGE_DIR = "/home/tanner/Cinderblock/images"
 cwd = os.getcwd()
 backSub = None
 
+# TODO:
+# copy over .json files into resulting processed directory
+
 def processImage_Canny(image):
     edges = cv2.Canny(image,100,200)
     edges = edges.astype('uint8')
@@ -46,15 +49,15 @@ def getFilePathList():
 if __name__ == "__main__":
     files = getFilePathList()
 
-    if not os.path.exists('result'):
-        os.mkdir('result')
+    if not os.path.exists('processed'):
+        os.mkdir('processed')
 
     for image in files:
         cur_image = cv2.imread(image)
         fname = os.path.basename(image)
         # print(fname)
         result_image = processImage_MOG(cur_image)
-        result_path = cwd + "/result/" + image
+        result_path = cwd + "/processed/" + image
         dir_path = result_path[:-len(fname)]
         print(dir_path)
         print
