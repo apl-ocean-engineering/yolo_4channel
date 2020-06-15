@@ -13,7 +13,17 @@ cwd = os.getcwd()
 backSub = None
 
 # TODO:
-# copy over .json files into resulting processed directory
+# copy over .json files (from labelme) into resulting "processed" directory 
+# enable command line input to specify processing technique
+# convert script to process each directory separately
+#   seems like running MOG on all images resulted in bad data being generated
+
+def processImage_Disparity(image):
+    # need to process one directory at a time
+    # idea is that each image will have a 4th channel of the differences between it and the previous image
+    # therefore first image in directory will have nothing in the 4th channel
+    return result
+
 
 def processImage_Canny(image):
     edges = cv2.Canny(image,100,200)
@@ -35,7 +45,7 @@ def processImage_MOG(image):
     result = numpy.dstack((image, fgMask))
     return result
 
-def getFilePathList():
+def getAllFilePathList():
     init_files = glob.glob(cwd + '/**/*' + FILE_TYPE, recursive=True)
     files = []
     for path in init_files:
@@ -47,7 +57,7 @@ def getFilePathList():
     return files
 
 if __name__ == "__main__":
-    files = getFilePathList()
+    files = getAllFilePathList()
 
     if not os.path.exists('processed'):
         os.mkdir('processed')
