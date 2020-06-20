@@ -16,18 +16,17 @@ cwd = os.getcwd()
 
 # TODO:
 # enable command line input to specify processing technique
-# write function for left-right disparity
 
 def saveResult(result_image, image_path):
     fname = os.path.basename(image_path)
-    print(fname)
+    # print(fname)
     result_path = cwd + "/processed_images/" + image_path
     dir_path = result_path[:-len(fname)]
-    print(dir_path)
+    # print(dir_path)
     if not os.path.exists(dir_path):
         os.makedirs(dir_path, exist_ok = True)
-    print("RESULT PATH: " + result_path)
-    print("RESULT SHAPE: " + str(result_image.shape))
+    # print("RESULT PATH: " + result_path)
+    # print("RESULT SHAPE: " + str(result_image.shape))
     cv2.imwrite(result_path, result_image)
 
     # hacked-together method of getting .json files copied over
@@ -36,21 +35,81 @@ def saveResult(result_image, image_path):
         json_path = json_path + ".json"
         save_json_path = result_path[:-len(FILE_TYPE)]
         save_json_path = save_json_path + ".json"
-        print("COPYING " + json_path + " TO " + save_json_path)
+        # print("COPYING " + json_path + " TO " + save_json_path)
         copy2(json_path, save_json_path)
     except:
-        print("no json file associated with current image")
+        print("no .json file associated with current image")
 
 def processDir_TempDisparity(fnames):
     # need to process one directory at a time, skip first image
         # requires passing current directory list of images
     # idea is that each image will have a 4th channel of the differences between it and the previous image
     # therefore first image in directory will have nothing in the 4th channel
-    result = None
-    return result
+    # from skimage.measure import compare_ssim
+    from skimage.metrics import structural_similarity as compare_ssim
+    import imutils
+    firstImage = True
+    for i in range(len(fnames)):
+        if firstImage:
+            firstImage = False
+            pass
+        else:
+            # load images in grayscale
+            img1 = cv2.imread(fnames[i], 0)
+            img2 = cv2.imread(fnames[i-1], 0) # comparing to previous image
+            # compute difference via SSIM, make image we can add to 4th channel
+            (score, diff) = compare_ssim(img1, img2, full=True)
+            diff = (diff * 255).astype("uint8")
+            # cv2.imshow("diff", diff)
+            # cv2.waitKey(10)
+            original_img1 = cv2.imread(fnames[i], -1)
+            result_image = numpy.dstack((original_img1, diff))
+            image_path = fnames[i]
+            saveResult(result_image, image_path)
 
 def processDir_StereoDisparity(fnames):
-    return None
+    # needs to have matching frames from left and right directories for each subset
+
+    # load left and right matching frames in grayscale
+    # make left-based disparity image
+    # flip images (?)
+        # mirror each one? or switch which one we call left vs right?
+    # make right-based disparity image
+    # save 4th channel in each
+
+    # TODO: update saveResult to use os.path.dirname function instead of string manipulation
+    subset_path = os.path.dirname(os.path.dirname(fnames[0]))
+    left_fnames = natsorted(glob.glob(subset_path + '/left/*' + FILE_TYPE))
+    right_fnames = natsorted(glob.glob(subset_path + '/right/*' + FILE_TYPE))
+    # print("LEFT: " + str(left_fnames))
+    # print("RIGHT: " + str(right_fnames))
+    for i in range(len(left_fnames)):
+        # make sure there is a matching frame in right_fnames
+            # last 3 characters of each frame (not including file extension) must match
+                # still works for 2-digit numbered images
+        test_left = left_fnames[i][-(3 + len(FILE_TYPE)):]
+        # print("TEST: " + test_left)
+        test_right = right_fnames[i][-(3 + len(FILE_TYPE)):]
+        if test_left == test_right:
+            # frames match
+            # compute left-based disparity
+            left_img = cv2.imread(left_fnames[i], 0)
+            right_img = cv2.imread(right_fnames[i], 0)
+            stereo = cv2.StereoBM_create(numDisparities=16, blockSize=15)
+            left_disparity = stereo.compute(left_img, right_img).astype("uint8")
+
+            # compute right-based disparity
+            left_flipped = cv2.flip(left_img, 1)
+            right_flipped = cv2.flip(right_img, 1)
+            right_disparity = stereo.compute(right_flipped, left_flipped).astype("uint8")
+
+            cv2.imshow("left-based", left_disparity)
+            cv2.imshow("right-based", right_disparity)
+            cv2.waitKey(10)
+
+        else:
+            pass
+
 
 def processDir_Batch(fnames):
     # convert the current + next 4 images to grayscale
@@ -141,7 +200,8 @@ if __name__ == "__main__":
             print("SUB DIR: " + sub_dir)
             fnames = natsorted(glob.glob(sub_dir + "/*" + FILE_TYPE, recursive=True))
             # process current directory and save results
-            processDir_Batch(fnames)
+            # processDir_Batch(fnames)
+            processDir_StereoDisparity(fnames)
 
     # if not os.path.exists('processed_images'):
     #     os.mkdir('processed_images')
